@@ -6,6 +6,7 @@ import org.scalajs.dom.{html, MouseEvent}
 import wb.client.log.LogTable
 import wb.shared.Coordinate
 
+import scala.scalajs.js
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
@@ -16,6 +17,7 @@ object Main extends JSApp with LogTable {
   val doc = dom.document
 
   def main(): Unit = {
+    println("in main")
 
     // init log-table
     LogTable.appendLogTableTo(doc.getElementById("log"))
@@ -45,11 +47,18 @@ object Main extends JSApp with LogTable {
       val socket = run("/board")
 
       def send(coord: Coordinate): Unit = {
-        debug(s"send coord: ${coord}")
         socket.send(coord.toString)
+      }
+
+
+      socket.onmessage = (e: MessageEvent) => {
+        val c = js.JSON.parse(e.data.toString)
+        def d(d: Dynamic): Double = d.toString.toDouble
+        renderer.fillRect(d(c.x), d(c.y), d(c.w), d(c.h))
       }
     }
     val boardSync = new BoardSync()
+
 
     canvas.onmousemove = (e: MouseEvent) => {
       val rect = canvas.getBoundingClientRect

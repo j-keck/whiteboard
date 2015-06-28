@@ -21,12 +21,15 @@ import org.http4s.websocket.WebsocketBits.{WebSocketFrame, Text}
 import _root_.scalaz.stream.{Exchange, Process, time}
 import scalaz.concurrent.Task
 import scalaz.stream.async.topic
+import argonaut._, Argonaut._
 
 object Server extends App {
   implicit val scheduledEC = Executors.newScheduledThreadPool(1)
 
-  private val coordinates = topic[String]()
+  private val coordinates = topic[Coordinate]()
   coordinates.subscribe.map(println).run.runAsync(_ => ())
+
+  implicit def CoordinateCodecJson = casecodec4(Coordinate.apply, Coordinate.unapply)("x", "y", "w", "h")
 
   val service = HttpService {
     case r@GET -> Root / "chat" =>
@@ -34,13 +37,12 @@ object Server extends App {
       WS(Exchange(src, Process.halt))
 
     case r @ GET -> Root / "board" =>
-      def wsFrameToString(frame: WebSocketFrame) = frame match {
-        case Text(msg, _) => msg
-        case _ => "INVALID MESSAGE!!!"
+      def txtFrame2Coordinate(frame: WebSocketFrame) = frame match {
+        case Text(txt, _) => txt.decode[Coordinate].getOrElse(Coordinate(0, 0, 0, 0)) //FIXME
       }
 
-      val src = coordinates.subscribe.map(Text(_))
-      val snk = coordinates.publish.map(_ compose wsFrameToString)//(_ => Process.halt)
+      val src = coordinates.subscribe.map(c => Text(c.asJson.spaces2))
+      val snk = coordinates.publish.map(_ compose txtFrame2Coordinate)//(_ => Process.halt)
       WS(Exchange(src, snk))
 
     case req@GET -> Root / "app.js" =>
