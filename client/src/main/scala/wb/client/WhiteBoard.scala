@@ -3,6 +3,7 @@ package wb.client
 import org.scalajs.dom
 import org.scalajs.dom._
 import org.scalajs.dom.raw.MessageEvent
+import sodium.CellSink
 import wb.client.log.LogView
 import wb.shared.Coordinate
 
@@ -10,34 +11,63 @@ import scala.scalajs.js
 
 class WhiteBoard extends LogView {
 
-  def draw(canvas: html.Canvas): Unit = {
-    val renderer = canvas.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
+  sealed trait UpDown
 
+  case object Up extends UpDown
+
+  case object Down extends UpDown
+
+  private val mouseState = new CellSink[UpDown](Up)
+
+  type MousePos = (Double, Double)
+  private val mousePos = new CellSink[MousePos](0, 0)
+
+
+  def draw(canvas: html.Canvas): Unit = {
+    //
+    // configure canvas
     canvas.width = canvas.parentElement.clientWidth
     canvas.height = canvas.parentElement.clientHeight
 
+    //
+    // setup renderer
+    val renderer = canvas.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
+
+    // background
     renderer.fillStyle = "#ededed"
     renderer.fillRect(0, 0, canvas.width, canvas.height)
 
+    // foreground
     renderer.fillStyle = "black"
-    var down = false
+
+
+    //
+    // register mouse listeners
     canvas.onmousedown = (e: MouseEvent) => {
       debug("mouse-down")
-      down = true
+      mouseState.send(Down)
     }
+
     canvas.onmouseup = (_: MouseEvent) => {
       debug("mouse-up")
-      down = false
+      mouseState.send(Up)
+    }
+
+    canvas.onmousemove = (e: MouseEvent) => {
+      val rect = canvas.getBoundingClientRect
+      mousePos.send(e.clientX - rect.left, e.clientY - rect.top)
     }
 
 
-    class BoardSync extends WSSupport with LogView {
+
+    val boardSync = new WSSupport with LogView {
       val socket = run("/board")
 
       def send(coord: Coordinate): Unit = {
         socket.send(coord.toString)
       }
-      def send(s: String) =  socket.send(s)
+
+      def send(s: String) = socket.send(s)
 
 
       socket.onmessage = (e: MessageEvent) => {
@@ -49,15 +79,10 @@ class WhiteBoard extends LogView {
         renderer.fillRect(c.x.toString.toDouble, c.y.toString.toDouble, c.w.toString.toDouble, c.h.toString.toDouble)
       }
     }
-    val boardSync = new BoardSync()
 
-
-    canvas.onmousemove = (e: MouseEvent) => {
-      val rect = canvas.getBoundingClientRect
-      if (down) {
-        val (x, y, w, h) =  (e.clientX - rect.left, e.clientY - rect.top, 5, 5)
-        boardSync.send(s"""{"x":$x,"y":$y,"w":$w,"h":$h}""") // FIXME: compile 'argonaut' for scala.js
-      }
+    mousePos.value.gate(mouseState.map(_ == Down)).map { case (x, y) =>
+      boardSync.send( s"""{"x":$x,"y":$y,"w":5,"h":5}""") // FIXME: compile 'argonaut' for scala.js
     }
   }
+
 }

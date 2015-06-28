@@ -10,7 +10,8 @@ def WBPrj(name: String): Project = {
   Project(name, file(name)).
     settings(
       version := "0.0.1",
-      scalaVersion := "2.11.6"
+      scalaVersion := "2.11.6",
+      resolvers += Resolver.bintrayRepo("j-keck", "maven")
     )
 }
 
@@ -51,7 +52,8 @@ lazy val client = (
       libraryDependencies ++=
         Seq(
           "org.scala-js" %%% "scalajs-dom" % "0.8.1",
-          "com.lihaoyi" %%% "scalatags" % "0.5.2"
+          "com.lihaoyi" %%% "scalatags" % "0.5.2",
+          "sodium" %%% "sodium" % "1.0"
         )
     )
   )
