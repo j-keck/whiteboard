@@ -13,6 +13,7 @@ trait WSSupport {
     val socket = webSocket(endpoint)
     socket.onopen = (e: Event) => debug(s"ws connected (endpoint: ${endpoint})")
     socket.onerror = (e: ErrorEvent) => error(s"ws error (endpoint: ${endpoint}) error: ${e.message}")
+    socket.onclose = (e: Event) => debug(s"ws closed (endpoint: ${endpoint})")
     socket
   }
 

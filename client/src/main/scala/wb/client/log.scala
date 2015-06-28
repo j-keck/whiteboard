@@ -1,7 +1,11 @@
 package wb.client
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import org.scalajs.dom
 import org.scalajs.dom._
+import scala.scalajs.js
 import scalatags.JsDom.all._
 
 object log {
@@ -9,16 +13,23 @@ object log {
   private val doc = dom.document
 
   trait LogSupport {
-    def debug(msg: String): Unit
 
-    def info(msg: String): Unit
+    def debug(msg: String) = log(now, "DEBUG", msg)
 
-    def error(msg: String): Unit
+    def info(msg: String) = log(now, "INFO", msg)
 
-    def exception(msg: String, e: Exception): Unit
+    def error(msg: String) = log(now, "ERROR", msg)
+
+    def exception(msg: String, e: Exception) = log(now, "EXCEPTION", s"${msg}: ${e.getMessage}")
+
+    def log(ts: String, severity: String, msg: String): Unit
+
+    private def now: String = new js.Date(js.Date.now()).toLocaleTimeString
   }
 
-  object LogTable extends LogTable {
+  
+  object LogView extends LogView {
+
     def appendLogTableTo(e: Element): Unit = {
       val headers = Seq("Timestamp", "Severity", "Message")
       val logTable = table(
@@ -31,25 +42,14 @@ object log {
     }
   }
 
-  trait LogTable extends LogSupport {
-    override def debug(msg: String): Unit = append("DEBUG", msg)
-
-    override def error(msg: String): Unit = append("ERROR", msg)
-
-    override def info(msg: String): Unit = append("INFO", msg)
-
-    override def exception(msg: String, e: Exception): Unit = append("EXCEPTION", msg)
-
-    private def append(severity: String, msg: String): Unit = {
+  trait LogView extends LogSupport {
+    def log(ts: String, severity: String, msg: String): Unit = {
       val row = tr(
-        td("<TS>"),
+        td(ts),
         td(severity),
         td(msg)
       )
-      println("ROW:")
-      println(row)
       doc.getElementById("log-table-body").appendChild(row.render)
-
     }
   }
 
