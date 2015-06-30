@@ -9,7 +9,9 @@ import wb.shared.Coordinate
 
 import scala.scalajs.js
 
-class WhiteBoard extends LogView {
+object WhiteBoard extends LogView {
+
+  private val doc = dom.document
 
   sealed trait UpDown
 
@@ -23,11 +25,32 @@ class WhiteBoard extends LogView {
   private val mousePos = new CellSink[MousePos](0, 0)
 
 
-  def draw(canvas: html.Canvas): Unit = {
+  def draw(): Unit = {
+
     //
-    // configure canvas
+    // register mouse listeners
+    doc.onmousedown = (e: MouseEvent) => {
+      // react only on the left mouse button
+      if (e.button == 0)
+        mouseState.send(Down)
+    }
+
+    doc.onmouseup = (_: MouseEvent) => {
+      mouseState.send(Up)
+    }
+
+
+    //
+    // setup canvas
+    val canvas = doc.getElementById("canvas").asInstanceOf[html.Canvas]
     canvas.width = canvas.parentElement.clientWidth
     canvas.height = canvas.parentElement.clientHeight
+
+    canvas.onmousemove = (e: MouseEvent) => {
+      val rect = canvas.getBoundingClientRect
+      mousePos.send(e.clientX - rect.left, e.clientY - rect.top)
+    }
+
 
     //
     // setup renderer
@@ -41,25 +64,9 @@ class WhiteBoard extends LogView {
     renderer.fillStyle = "black"
 
 
-    //
-    // register mouse listeners
-    canvas.onmousedown = (e: MouseEvent) => {
-      debug("mouse-down")
-      mouseState.send(Down)
-    }
-
-    canvas.onmouseup = (_: MouseEvent) => {
-      debug("mouse-up")
-      mouseState.send(Up)
-    }
-
-    canvas.onmousemove = (e: MouseEvent) => {
-      val rect = canvas.getBoundingClientRect
-      mousePos.send(e.clientX - rect.left, e.clientY - rect.top)
-    }
 
 
-
+    // board synchronization: client <-> server
     val boardSync = new WSSupport with LogView {
       val socket = run("/board")
 
@@ -80,6 +87,7 @@ class WhiteBoard extends LogView {
       }
     }
 
+    // mouse actions
     mousePos.value.gate(mouseState.map(_ == Down)).map { case (x, y) =>
       boardSync.send( s"""{"x":$x,"y":$y,"w":5,"h":5}""") // FIXME: compile 'argonaut' for scala.js
     }

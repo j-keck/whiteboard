@@ -17,8 +17,6 @@ object Main extends JSApp with LogView {
     LogView.appendLogTableTo(doc.getElementById("log"))
 
     // whiteboard
-    val canvas = dom.document.getElementById("canvas").asInstanceOf[html.Canvas]
-    val whiteBoard = new WhiteBoard()
-    whiteBoard.draw(canvas)
+    WhiteBoard.draw()
   }
 }
