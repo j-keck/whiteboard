@@ -9,6 +9,9 @@ super simple client / server whiteboard, to play around with
 
 # dev
 
+        > ~; client/fastOptJS; re-start
+or       
+
         > ~; compile; re-start
         
 only in the 'compile' and 'packageBin' task's the scala.js were generated FIXME: why? (hint: 'resourceGenerators')
