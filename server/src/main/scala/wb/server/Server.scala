@@ -39,8 +39,8 @@ object Server extends App {
       val snk = coordinates.publish.contramap(txtFrame2Coordinate) //(_ => Process.halt)
       WS(Exchange(src, snk))
 
-    case GET -> Root / name =>
-      StaticFile.fromResource(s"/${name}").map(Task.now).get
+    case req @ GET -> Root / name =>
+      StaticFile.fromResource(s"/${name}", Some(req)).fold(NotFound(s"'${name}' not found"))(Task.now)
 
     case GET -> Root => PermanentRedirect(uri("/index.html"))
   }
