@@ -1,14 +1,10 @@
 package wb.client
 
 import org.scalajs.dom
-import org.scalajs.dom.raw.MessageEvent
-import org.scalajs.dom.{html, MouseEvent}
+import org.scalajs.dom.html
 import wb.client.log.LogView
-import wb.shared.Coordinate
 
-import scala.scalajs.js
 import scala.scalajs.js.JSApp
-import scala.scalajs.js.annotation.JSExport
 
 
 object Main extends JSApp with LogView {

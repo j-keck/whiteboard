@@ -1,8 +1,5 @@
 package wb.client
 
-import java.text.SimpleDateFormat
-import java.util.Date
-
 import org.scalajs.dom
 import org.scalajs.dom._
 import scala.scalajs.js
