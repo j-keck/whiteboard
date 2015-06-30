@@ -51,6 +51,7 @@ lazy val client = (
     dependsOn(shared).
     enablePlugins(ScalaJSPlugin).
     settings(
+      scalaJSStage in Global := FastOptStage,
       libraryDependencies ++=
         Seq(
           "org.scala-js" %%% "scalajs-dom" % "0.8.1",
