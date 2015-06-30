@@ -3,8 +3,8 @@ package wb.server
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
-import argonaut.Argonaut._
-import argonaut._
+
+import argonaut._, Argonaut._
 import org.http4s.StaticFile
 import org.http4s.blaze.channel.SocketConnection
 import org.http4s.blaze.channel.nio1.NIO1SocketServerGroup
@@ -25,7 +25,6 @@ object Server extends App {
 
   private val coordinates = topic[Coordinate]()
 
-  implicit def CoordinateCodecJson = casecodec4(Coordinate.apply, Coordinate.unapply)("x", "y", "w", "h")
 
   val service = HttpService {
     case r@GET -> Root / "board" =>

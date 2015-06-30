@@ -6,6 +6,7 @@ import org.scalajs.dom.raw.MessageEvent
 import sodium.CellSink
 import wb.client.log.LogView
 import wb.shared.Coordinate
+import argonaut._, Argonaut._
 
 import scala.scalajs.js
 
@@ -71,11 +72,8 @@ object WhiteBoard extends LogView {
       val socket = run("/board")
 
       def send(coord: Coordinate): Unit = {
-        socket.send(coord.toString)
+        socket.send(coord.asJson.nospaces)
       }
-
-      def send(s: String) = socket.send(s)
-
 
       socket.onmessage = (e: MessageEvent) => {
         val c = js.JSON.parse(e.data.toString)
@@ -89,7 +87,7 @@ object WhiteBoard extends LogView {
 
     // mouse actions
     mousePos.value.gate(mouseState.map(_ == Down)).map { case (x, y) =>
-      boardSync.send( s"""{"x":$x,"y":$y,"w":5,"h":5}""") // FIXME: compile 'argonaut' for scala.js
+      boardSync.send(Coordinate(x, y, 5, 5))
     }
   }
 

@@ -11,7 +11,10 @@ def WBPrj(name: String): Project = {
     settings(
       version := "0.0.1",
       scalaVersion := "2.11.6",
-      resolvers += Resolver.bintrayRepo("j-keck", "maven")
+      resolvers += Resolver.bintrayRepo("j-keck", "maven"),
+      libraryDependencies ++= Seq(
+       "io.argonaut" %% "argonaut" % "6.1"
+      )
     )
 }
 
@@ -38,8 +41,7 @@ lazy val server = (
         Seq(
           "org.http4s" %% "http4s-dsl" % http4sVersion,
           "org.http4s" %% "http4s-blazeserver" % http4sVersion,
-          "ch.qos.logback" % "logback-classic" % "1.1.3",
-          "io.argonaut" %% "argonaut" % "6.1"
+          "ch.qos.logback" % "logback-classic" % "1.1.3"
         )
     )
   )
@@ -53,8 +55,14 @@ lazy val client = (
         Seq(
           "org.scala-js" %%% "scalajs-dom" % "0.8.1",
           "com.lihaoyi" %%% "scalatags" % "0.5.2",
-          "sodium" %%% "sodium" % "1.0"
+          "sodium" %%% "sodium" % "1.0",
+          "io.argonaut" %%% "argonaut" % "6.1",
+          "com.github.japgolly.fork.scalaz" %%% "scalaz-core" % "7.1.2",
+          "com.github.japgolly.fork.monocle" %%% "monocle-core" % "1.1.1",
+          "com.github.japgolly.fork.monocle" %%% "monocle-macro" % "1.1.1"
         )
     )
   )
+
+addCompilerPlugin(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
 
