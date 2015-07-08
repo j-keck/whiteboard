@@ -4,13 +4,12 @@ name := "whiteboard"
 
 val http4sVersion = "0.8.1"
 
-scalaVersion := "2.11.6"
 
 def WBPrj(name: String): Project = {
   Project(name, file(name)).
     settings(
       version := "0.0.1",
-      scalaVersion := "2.11.6",
+      scalaVersion := "2.11.7",
       resolvers += Resolver.bintrayRepo("j-keck", "maven"),
       resolvers += "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
       libraryDependencies ++= Seq(
