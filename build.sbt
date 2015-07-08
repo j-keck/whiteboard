@@ -12,6 +12,7 @@ def WBPrj(name: String): Project = {
       version := "0.0.1",
       scalaVersion := "2.11.6",
       resolvers += Resolver.bintrayRepo("j-keck", "maven"),
+      resolvers += "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
       libraryDependencies ++= Seq(
        "io.argonaut" %% "argonaut" % "6.1"
       )
