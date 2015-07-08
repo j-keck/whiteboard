@@ -14,7 +14,7 @@ import org.http4s.server.HttpService
 import org.http4s.server.blaze.{Http1ServerStage, WebSocketSupport}
 import org.http4s.server.websocket.WS
 import org.http4s.websocket.WebsocketBits.{Text, WebSocketFrame}
-import wb.shared.Coordinate
+import wb.shared.Line
 
 import _root_.scalaz.stream.{Exchange, Process}
 import scalaz.concurrent.Task
@@ -23,20 +23,17 @@ import scalaz.stream.async.topic
 object Server extends App {
   implicit val scheduledEC = Executors.newScheduledThreadPool(1)
 
-  private val coordinates = topic[Coordinate]()
+  private val coordinates = topic[Line]()
 
 
   val service = HttpService {
     case r@GET -> Root / "board" =>
       def txtFrame2Coordinate(frame: WebSocketFrame) = frame match {
-        case Text(txt, _) => txt.decodeEither[Coordinate].fold({ l: String =>
-          println(l)
-          Coordinate(0, 0, 0, 0) // FIXME
-        }, identity)
+        case Text(txt, _) => txt.decodeOption[Line].get // FIXME
       }
 
       val src: Process[Task, Text] = coordinates.subscribe.map(c => Text(c.asJson.spaces2))
-      val snk = coordinates.publish.contramap(txtFrame2Coordinate) //(_ => Process.halt)
+      val snk = coordinates.publish.contramap(txtFrame2Coordinate)
       WS(Exchange(src, snk))
 
     case req @ GET -> Root / name =>

@@ -3,13 +3,14 @@ package wb.client
 import org.scalajs.dom
 import org.scalajs.dom._
 import org.scalajs.dom.raw.MessageEvent
-import sodium.{StreamSink, Stream, CellSink}
+import sodium.{Cell, StreamSink, Stream, CellSink}
 import wb.client.log.LogView
-import wb.shared.Coordinate
+import wb.shared.{Pos, Line}
 import argonaut._, Argonaut._
+import scala.concurrent.duration._
 import scalatags.JsDom.all._
 import ReactiveElement._
-import scalaz._, Scalaz._
+
 
 import scala.scalajs.js
 
@@ -17,21 +18,29 @@ object WhiteBoard extends LogView {
 
   private val doc = dom.document
 
-  sealed trait UpDown
+  sealed trait UpOrDown {
+    def isUp = this == Up
 
-  case object Up extends UpDown
+    def isDown = this == Down
+  }
 
-  case object Down extends UpDown
+  case object Up extends UpOrDown
 
-  private val mouseState = new CellSink[UpDown](Up)
+  case object Down extends UpOrDown
 
-  type MousePos = (Double, Double)
-  private val mousePos = new CellSink[MousePos](0, 0)
+  private val mouseState = new CellSink[UpOrDown](Up)
+
+
+  private val mousePos = new CellSink[Pos](Pos(0, 0))
+
 
 
   def draw(): Unit = {
-    // tool-bar
-    doc.getElementById("toolBar").appendChild(toolBar)
+    val color = {
+      val (div, color) = colorToolBar
+      doc.getElementById("toolBar").appendChild(div)
+      color
+    }
 
     //
     // register mouse listeners
@@ -54,7 +63,7 @@ object WhiteBoard extends LogView {
 
     canvas.onmousemove = (e: MouseEvent) => {
       val rect = canvas.getBoundingClientRect
-      mousePos.send(e.clientX - rect.left, e.clientY - rect.top)
+      mousePos.send(Pos(e.clientX - rect.left, e.clientY - rect.top))
     }
 
 
@@ -66,52 +75,62 @@ object WhiteBoard extends LogView {
     renderer.fillStyle = "#ededed"
     renderer.fillRect(0, 0, canvas.width, canvas.height)
 
-    // foreground
-    renderer.fillStyle = "black"
-
-
-
 
     // board synchronization: client <-> server
     val boardSync = new WSSupport with LogView {
       val socket = run("/board")
 
-      def send(coord: Coordinate): Unit = {
-        socket.send(coord.asJson.nospaces)
+      def send(line: Line): Unit = {
+        socket.send(line.asJson.nospaces)
       }
 
       socket.onmessage = (e: MessageEvent) => {
-        val c = js.JSON.parse(e.data.toString)
-        def d(dyn: Dynamic): Double = {
-          val s = dyn.toString
-          s.toDouble
+        val line = js.JSON.parse(e.data.toString)
+
+        // FIXME
+        val (x1, y1) = {
+          val start = line.start
+          (start.x.toString.toDouble, start.y.toString.toDouble)
         }
-        renderer.fillRect(c.x.toString.toDouble, c.y.toString.toDouble, c.w.toString.toDouble, c.h.toString.toDouble)
+
+        val (x2, y2) = {
+          val end = line.end
+          (end.x.toString.toDouble, end.y.toString.toDouble)
+        }
+
+        val color = line.color
+        // println(color)
+
+        renderer.beginPath()
+        renderer.strokeStyle = color
+        renderer.moveTo(x1, y1)
+        renderer.lineTo(x2, y2)
+        renderer.stroke()
       }
     }
 
-    // mouse actions
-    mousePos.value.gate(mouseState.map(_ == Down)).map { case (x, y) =>
-      boardSync.send(Coordinate(x, y, 5, 5))
+
+
+    mousePos.value.snapshot(mouseState, (p, s: UpOrDown) => (p, s))
+
+    import sodiumExtensions._
+
+    StreamOps(mousePos.zip(mouseState).value).accum(Vector.empty[Pos])({ case ((p, s), v) => (v, s) match {
+      case (Vector(start, end), Down) =>
+        boardSync.send(Line(start, end, color.sample))
+        Vector(end)
+      case (_, Down) => v :+ p
+      case (_, Up) => Vector.empty
     }
+    })
+
   }
 
-  def toolBar = {
+  def colorToolBar: (Node, Cell[String]) = {
     val colors = Seq("black", "red", "green", "yellow", "brown")
     val (btns, streams) = colors.map(c => mkButton(c, c)).unzip
 
-    // FIXME
-    val canvas = doc.getElementById("canvas").asInstanceOf[dom.html.Canvas]
-    val renderer = canvas.getContext("2d").asInstanceOf[dom.CanvasRenderingContext2D]
-
-    // change color
-    streams.reduce(_ |+| _) map(renderer.fillStyle = _)
-
-    div(btns).render
+    (div(btns).render, streams.reduce(_ merge _).hold("black"))
   }
 
-  implicit def streamMonoid[A: Semigroup]: Monoid[Stream[A]] = new Monoid[Stream[A]] {
-    def append(f1: Stream[A], f2: => Stream[A]): Stream[A] = f1.merge(f2)
-    def zero: Stream[A] = new StreamSink[A]
-  }
 }
