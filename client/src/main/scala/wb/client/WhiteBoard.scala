@@ -85,27 +85,13 @@ object WhiteBoard extends LogView {
       }
 
       socket.onmessage = (e: MessageEvent) => {
-        val line = js.JSON.parse(e.data.toString)
-
-        // FIXME
-        val (x1, y1) = {
-          val start = line.start
-          (start.x.toString.toDouble, start.y.toString.toDouble)
-        }
-
-        val (x2, y2) = {
-          val end = line.end
-          (end.x.toString.toDouble, end.y.toString.toDouble)
-        }
-
-        val color = line.color
-        // println(color)
-
-        renderer.beginPath()
-        renderer.strokeStyle = color
-        renderer.moveTo(x1, y1)
-        renderer.lineTo(x2, y2)
-        renderer.stroke()
+        e.data.toString.decodeEither[Line].fold(error,  line => {
+          renderer.beginPath()
+          renderer.strokeStyle = line.color
+          renderer.moveTo(line.start.x, line.start.y)
+          renderer.lineTo(line.end.x, line.end.y)
+          renderer.stroke()
+        })
       }
     }
 
