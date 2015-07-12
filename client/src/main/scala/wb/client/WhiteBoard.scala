@@ -42,6 +42,13 @@ object WhiteBoard extends LogView {
       color
     }
 
+    val lineWidth = {
+      val (div, lineWidth) = lineWidthToolBar
+      doc.getElementById("toolBar").appendChild(div)
+      lineWidth
+    }
+
+
     //
     // register mouse listeners
     doc.onmousedown = (e: MouseEvent) => {
@@ -88,6 +95,7 @@ object WhiteBoard extends LogView {
         e.data.toString.decodeEither[Line].fold(error,  line => {
           renderer.beginPath()
           renderer.strokeStyle = line.color
+          renderer.lineWidth = line.width
           renderer.moveTo(line.start.x, line.start.y)
           renderer.lineTo(line.end.x, line.end.y)
           renderer.stroke()
@@ -103,7 +111,7 @@ object WhiteBoard extends LogView {
 
     StreamOps(mousePos.zip(mouseState).value).accum(Vector.empty[Pos])({ case ((p, s), v) => (v, s) match {
       case (Vector(start, end), Down) =>
-        boardSync.send(Line(start, end, color.sample))
+        boardSync.send(Line(start, end, color.sample, lineWidth.sample))
         Vector(end)
       case (_, Down) => v :+ p
       case (_, Up) => Vector.empty
@@ -117,6 +125,13 @@ object WhiteBoard extends LogView {
     val (btns, streams) = colors.map(c => mkButton(c, c)).unzip
 
     (div(btns).render, streams.reduce(_ merge _).hold("black"))
+  }
+
+  def lineWidthToolBar: (Node, Cell[Int]) = {
+    val sizes = 1 to 5
+    val (btns, streams) = sizes.map(s => mkButton(s"$s", s)).unzip
+
+    (div(btns).render, streams.reduce(_ merge _).hold(1))
   }
 
 }
