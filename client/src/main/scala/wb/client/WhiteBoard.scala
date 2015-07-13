@@ -107,8 +107,6 @@ object WhiteBoard extends LogView {
       }
     }
 
-
-
     // when the use draws a line, send it to the server
     import sodiumExtensions._
     StreamOps(mousePos.zip(mouseState).value).accum(Vector.empty[Pos])({ case ((p, s), v) => (v, s) match {

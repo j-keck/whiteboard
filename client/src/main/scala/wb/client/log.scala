@@ -46,7 +46,9 @@ object log {
         td(severity),
         td(msg)
       )
-      doc.getElementById("log-table-body").appendChild(row.render)
+      val table = doc.getElementById("log-table-body")
+      table.appendChild(row.render)
+      table.scrollTop = table.scrollHeight
     }
   }
 
