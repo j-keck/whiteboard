@@ -5,7 +5,7 @@ import org.scalajs.dom._
 import org.scalajs.dom.raw.MessageEvent
 import sodium.{Cell, StreamSink, Stream, CellSink}
 import wb.client.log.LogView
-import wb.shared.{Pos, Line}
+import wb.shared.{Style, Pos, Line}
 import argonaut._, Argonaut._
 import scala.concurrent.duration._
 import scalatags.JsDom.all._
@@ -30,22 +30,27 @@ object WhiteBoard extends LogView {
 
   private val mouseState = new CellSink[UpOrDown](Up)
 
-
   private val mousePos = new CellSink[Pos](Pos(0, 0))
 
 
 
   def draw(): Unit = {
-    val color = {
-      val (div, color) = colorToolBar
-      doc.getElementById("toolBar").appendChild(div)
-      color
-    }
+    // the line style (color / width)
+    val style: Cell[Style] = {
 
-    val lineWidth = {
-      val (div, lineWidth) = lineWidthToolBar
-      doc.getElementById("toolBar").appendChild(div)
-      lineWidth
+      val color = {
+        val (div, color) = colorToolBar
+        doc.getElementById("toolBar").appendChild(div)
+        color
+      }
+
+      val lineWidth = {
+        val (div, lineWidth) = lineWidthToolBar
+        doc.getElementById("toolBar").appendChild(div)
+        lineWidth
+      }
+
+      color lift(Style(_, _: Int), lineWidth)
     }
 
 
@@ -94,8 +99,8 @@ object WhiteBoard extends LogView {
       socket.onmessage = (e: MessageEvent) => {
         e.data.toString.decodeEither[Line].fold(error,  line => {
           renderer.beginPath()
-          renderer.strokeStyle = line.color
-          renderer.lineWidth = line.width
+          renderer.strokeStyle = line.style.color
+          renderer.lineWidth = line.style.width
           renderer.moveTo(line.start.x, line.start.y)
           renderer.lineTo(line.end.x, line.end.y)
           renderer.stroke()
@@ -111,12 +116,11 @@ object WhiteBoard extends LogView {
 
     StreamOps(mousePos.zip(mouseState).value).accum(Vector.empty[Pos])({ case ((p, s), v) => (v, s) match {
       case (Vector(start, end), Down) =>
-        boardSync.send(Line(start, end, color.sample, lineWidth.sample))
+        boardSync.send(Line(start, end, style.sample))
         Vector(end)
       case (_, Down) => v :+ p
       case (_, Up) => Vector.empty
-    }
-    })
+    }})
 
   }
 
