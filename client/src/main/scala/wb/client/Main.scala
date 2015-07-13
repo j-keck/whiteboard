@@ -1,7 +1,6 @@
 package wb.client
 
 import org.scalajs.dom
-import org.scalajs.dom.html
 import wb.client.log.LogView
 
 import scala.scalajs.js.JSApp

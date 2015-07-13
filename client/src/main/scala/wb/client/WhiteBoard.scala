@@ -28,23 +28,18 @@ object WhiteBoard extends LogView {
 
   case object Down extends UpOrDown
 
-  private val mouseState = new CellSink[UpOrDown](Up)
-
-  private val mousePos = new CellSink[Pos](Pos(0, 0))
-
-
 
   def draw(): Unit = {
     // the line style (color / width)
     val style: Cell[Style] = {
 
-      val color = {
+      val color: Cell[String] = {
         val (div, color) = colorToolBar
         doc.getElementById("toolBar").appendChild(div)
         color
       }
 
-      val lineWidth = {
+      val lineWidth: Cell[Int] = {
         val (div, lineWidth) = lineWidthToolBar
         doc.getElementById("toolBar").appendChild(div)
         lineWidth
@@ -52,10 +47,12 @@ object WhiteBoard extends LogView {
 
       color lift(Style(_, _: Int), lineWidth)
     }
+    style.updates.listen(s => debug(s"style changed: color: ${s.color}, width: ${s.width}"))
 
 
     //
     // register mouse listeners
+    val mouseState = new CellSink[UpOrDown](Up)
     doc.onmousedown = (e: MouseEvent) => {
       // react only on the left mouse button
       if (e.button == 0)
@@ -73,6 +70,7 @@ object WhiteBoard extends LogView {
     canvas.width = canvas.parentElement.clientWidth
     canvas.height = canvas.parentElement.clientHeight
 
+    val mousePos = new CellSink[Pos](Pos(0, 0))
     canvas.onmousemove = (e: MouseEvent) => {
       val rect = canvas.getBoundingClientRect
       mousePos.send(Pos(e.clientX - rect.left, e.clientY - rect.top))
@@ -96,8 +94,9 @@ object WhiteBoard extends LogView {
         socket.send(line.asJson.nospaces)
       }
 
+      // draw lines which are send from the server
       socket.onmessage = (e: MessageEvent) => {
-        e.data.toString.decodeEither[Line].fold(error,  line => {
+        e.data.toString.decodeEither[Line].fold(error, line => {
           renderer.beginPath()
           renderer.strokeStyle = line.style.color
           renderer.lineWidth = line.style.width
@@ -110,10 +109,8 @@ object WhiteBoard extends LogView {
 
 
 
-    mousePos.value.snapshot(mouseState, (p, s: UpOrDown) => (p, s))
-
+    // when the use draws a line, send it to the server
     import sodiumExtensions._
-
     StreamOps(mousePos.zip(mouseState).value).accum(Vector.empty[Pos])({ case ((p, s), v) => (v, s) match {
       case (Vector(start, end), Down) =>
         boardSync.send(Line(start, end, style.sample))
