@@ -6,7 +6,7 @@ import org.scalajs.dom.raw.MessageEvent
 import sodium.{Cell, StreamSink, Stream, CellSink}
 import wb.client.log.LogView
 import wb.shared.{Style, Pos, Line}
-import argonaut._, Argonaut._
+import io.circe._, io.circe.generic.auto._, io.circe.syntax._
 import scala.concurrent.duration._
 import scalatags.JsDom.all._
 import ReactiveElement._
@@ -91,31 +91,36 @@ object WhiteBoard extends LogView {
       val socket = run("/board")
 
       def send(line: Line): Unit = {
-        socket.send(line.asJson.nospaces)
+        socket.send(line.asJson.noSpaces)
       }
 
       // draw lines which are send from the server
       socket.onmessage = (e: MessageEvent) => {
-        e.data.toString.decodeEither[Line].fold(error, line => {
-          renderer.beginPath()
-          renderer.strokeStyle = line.style.color
-          renderer.lineWidth = line.style.width
-          renderer.moveTo(line.start.x, line.start.y)
-          renderer.lineTo(line.end.x, line.end.y)
-          renderer.stroke()
+        io.circe.parse.parse(e.data.toString).map(_.as[Line]).fold(e => error(s"parse line error: ${e}"), res => {
+          res.fold(e => error(s"decode line error: ${e}"), line => {
+            renderer.beginPath()
+            renderer.strokeStyle = line.style.color
+            renderer.lineWidth = line.style.width
+            renderer.moveTo(line.start.x, line.start.y)
+            renderer.lineTo(line.end.x, line.end.y)
+            renderer.stroke()
+          })
         })
       }
     }
 
     // when the use draws a line, send it to the server
+
     import sodiumExtensions._
+
     StreamOps(mousePos.zip(mouseState).value).accum(Vector.empty[Pos])({ case ((p, s), v) => (v, s) match {
       case (Vector(start, end), Down) =>
         boardSync.send(Line(start, end, style.sample))
         Vector(end)
       case (_, Down) => v :+ p
       case (_, Up) => Vector.empty
-    }})
+    }
+    })
 
   }
 

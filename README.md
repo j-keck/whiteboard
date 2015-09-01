@@ -1,10 +1,10 @@
 # scala.js playground
 
-
-super simple client / server whiteboard, to play around with 
-  
-  * scala.js
-  * http4s
+super simple multiuser client / server whiteboard, to play around with
+ 
+  * [scala.js](https://github.com/scala-js/scala-js)
+  * [http4s](https://github.com/http4s/http4s)
+  * [circe](https://github.com/travisbrown/circe)
   * sbt multi project (js + jvm)
 
 

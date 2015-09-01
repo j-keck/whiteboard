@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
 
-import argonaut._, Argonaut._
+import io.circe._, io.circe.generic.auto._, io.circe.jawn._, io.circe.syntax._
 import org.http4s.StaticFile
 import org.http4s.blaze.channel.SocketConnection
 import org.http4s.blaze.channel.nio1.NIO1SocketServerGroup
@@ -29,7 +29,7 @@ object Server extends App {
   val service = HttpService {
     case r@GET -> Root / "board" =>
       def txtFrame2Coordinate(frame: WebSocketFrame) = frame match {
-        case Text(txt, _) => txt.decodeOption[Line].get // FIXME
+        case Text(txt, _) => decode[Line](txt).getOrElse(throw new Exception("BOOM")) // FIXME
       }
 
       val src: Process[Task, Text] = coordinates.subscribe.map(c => Text(c.asJson.spaces2))

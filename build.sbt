@@ -12,8 +12,11 @@ def WBPrj(name: String): Project = {
       scalaVersion := "2.11.7",
       resolvers += Resolver.bintrayRepo("j-keck", "maven"),
       resolvers += "Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases",
+      resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
       libraryDependencies ++= Seq(
-       "io.argonaut" %% "argonaut" % "6.1"
+        "io.circe" %% "circe-core" % "0.2.0-SNAPSHOT",
+        "io.circe" %% "circe-generic" % "0.2.0-SNAPSHOT",
+        "io.circe" %% "circe-jawn" % "0.2.0-SNAPSHOT"
       )
     )
 }
@@ -56,14 +59,11 @@ lazy val client = (
         Seq(
           "org.scala-js" %%% "scalajs-dom" % "0.8.1",
           "com.lihaoyi" %%% "scalatags" % "0.5.2",
-          "sodium" %%% "sodium" % "1.0",
-          "io.argonaut" %%% "argonaut" % "6.1",
-          "com.github.japgolly.fork.scalaz" %%% "scalaz-core" % "7.1.2",
-          "com.github.japgolly.fork.monocle" %%% "monocle-core" % "1.1.1",
-          "com.github.japgolly.fork.monocle" %%% "monocle-macro" % "1.1.1"
-        )
+          "io.circe" %%% "circe-core" % "0.2.0-SNAPSHOT",
+          "io.circe" %%% "circe-generic" % "0.2.0-SNAPSHOT",
+          "io.circe" %%% "circe-parse" % "0.2.0-SNAPSHOT",
+          "sodium" %%% "sodium" % "1.0")
     )
   )
 
-addCompilerPlugin(compilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full))
 
