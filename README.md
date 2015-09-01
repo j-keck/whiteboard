@@ -7,7 +7,21 @@ super simple multiuser client / server whiteboard, to play around with
   * [circe](https://github.com/travisbrown/circe)
   * sbt multi project (js + jvm)
 
+# branches
 
+## master
+   * json parsing per argonaut
+
+## circe-based
+   * same as master
+   * use circe for json handling
+      
+## sbt-scalajs-crossproject
+   * cross project per 'crossProject ...'
+   * works under sbt, but not under idea
+   
+
+   
 # dev
 
         > ~; client/fastOptJS; re-start

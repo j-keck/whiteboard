@@ -1,5 +1,6 @@
 package wb.client
 
+import cats.data.Xor
 import org.scalajs.dom
 import org.scalajs.dom._
 import org.scalajs.dom.raw.MessageEvent
@@ -96,20 +97,21 @@ object WhiteBoard extends LogView {
 
       // draw lines which are send from the server
       socket.onmessage = (e: MessageEvent) => {
-        io.circe.parse.parse(e.data.toString).map(_.as[Line]).fold(e => error(s"parse line error: ${e}"), res => {
-          res.fold(e => error(s"decode line error: ${e}"), line => {
-            renderer.beginPath()
-            renderer.strokeStyle = line.style.color
-            renderer.lineWidth = line.style.width
-            renderer.moveTo(line.start.x, line.start.y)
-            renderer.lineTo(line.end.x, line.end.y)
-            renderer.stroke()
-          })
+        (for {
+          json <- parse.parse(e.data.toString)
+          line <- json.as[Line]
+        } yield line) fold(e => error(s"decode json error: ${e}"), line => {
+          renderer.beginPath()
+          renderer.strokeStyle = line.style.color
+          renderer.lineWidth = line.style.width
+          renderer.moveTo(line.start.x, line.start.y)
+          renderer.lineTo(line.end.x, line.end.y)
+          renderer.stroke()
         })
       }
     }
 
-    // when the use draws a line, send it to the server
+    // when the user draws a line, send it to the server
 
     import sodiumExtensions._
 
